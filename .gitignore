@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# LaTeX
+*.tex
+*.dvi
+*.nav
+*.snm
+*.pdf
