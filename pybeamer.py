@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from pylatex import Document, Section, Subsection, Command
+from pylatex import Document, Section, Subsection, Command, NoEscape
 from pylatex.base_classes import Environment
 
 class Frame(Environment):
@@ -14,6 +14,7 @@ class Beamer(object):
       title,
       author=None,
       date=None,
+      outline_each_section=False,
       theme="default",
       color_theme="orchid",
       inner_theme="rounded",
@@ -27,6 +28,16 @@ class Beamer(object):
       self.doc.preamble.append(Command("usecolortheme", arguments=[color_theme]))
     if inner_theme is not None:
       self.doc.preamble.append(Command("useinnertheme", arguments=[inner_theme]))
+    if outline_each_section:
+      self.doc.preamble.append(NoEscape("""
+\\AtBeginSection[]
+{
+    \\begin{frame}
+        \\frametitle{Outline}
+        \\tableofcontents[currentsection]
+    \\end{frame}
+}
+        """))
     self.doc.preamble.append(Command("title", arguments=[title]))
     if author is not None:
       self.doc.preamble.append(Command("author", arguments=[author]))
@@ -63,7 +74,7 @@ class Beamer(object):
     self.doc.generate_pdf(filepath, compiler=compiler)
 
 if __name__ == '__main__':
-  beamer = Beamer("Example", author="author")
+  beamer = Beamer("Example", author="author", outline_each_section=True)
   beamer.titleframe()
   beamer.outlineframe()
   with beamer.section("First Section"):
