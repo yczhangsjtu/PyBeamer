@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from pylatex import *
+from pylatex.utils import *
 from pylatex.base_classes import Environment, Arguments, Options
 from .canvas import *
 

@@ -44,7 +44,7 @@ class DrawOptions:
     if key in self.switches:
       self.switches.remove(key)
     elif key in self.properties:
-      self.properties.remove(key)
+      self.properties.pop(key)
 
   def isset(self, switch):
     return switch in self.switches
@@ -106,6 +106,12 @@ class Node(HasOptions):
 
   def set_box(self, width, height):
     return self.set("minimum width", width).set("minimum height", height).set("draw")
+
+  def unset_box(self):
+    return self.unset("minimum width").unset("minimum height").unset("draw")
+
+  def unset_fill(self):
+    return self.unset("fill")
 
   def set_text_color(self, color):
     return self.set("text", color)
@@ -256,8 +262,14 @@ class Node(HasOptions):
   def connect_with_bi_arrow(self, another):
     return self.canvas.with_bi_arrow().connect(self, another)
 
+  def connect_with_bi_arrow_text(self, another, text):
+    return self.canvas.with_bi_arrow().connect(self, another).set_above_text(text)
+
   def point_to(self, another):
     return self.canvas.with_arrow().connect(self, another)
+
+  def point_to_with_text(self, another, text):
+    return self.canvas.with_arrow().connect(self, another).set_above_text(text)
 
 class NodeAnchor(object):
   def __init__(self, node, horizontal, vertical):
@@ -865,6 +877,9 @@ class Canvas(object):
   def with_scale(self, scale):
     return self.with_property("scale", str(scale))
 
+  def with_anchor(self, anchor):
+    return self.with_property("anchor", anchor)
+
   def with_arrow(self):
     return self.with_property("-stealth").with_property("draw")
 
@@ -941,7 +956,7 @@ class Canvas(object):
 
     if self.position_set is None:
       if self.coordinates is not None:
-        self.position_set = RelativePosition.from_short_repr(self.existing, self.coordinates)
+        self.position_set = PositionSet.from_short_repr(self.existing, self.coordinates)
 
     if n == 0 and self.position_set is not None:
       n = len(self.position_set.items)
