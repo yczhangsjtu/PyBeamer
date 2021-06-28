@@ -104,6 +104,9 @@ class Node(HasOptions):
   def set_fill(self, fill):
     return self.set("fill", fill)
 
+  def set_box(self, width, height):
+    return self.set("minimum width", width).set("minimum height", height).set("draw")
+
   def set_text_color(self, color):
     return self.set("text", color)
 
@@ -151,6 +154,24 @@ class Node(HasOptions):
     node.options = self.options.copy()
     return node
 
+  def copy_at_relative(self, relative_position):
+    node = self.copy()
+    self.canvas.relative_to(relative_position, self). \
+      apply_relative_position(node)
+    return node
+
+  def copy_to_right(self, distance=None):
+    return self.copy_at_relative(RelativePosition.right(distance))
+
+  def copy_to_left(self, distance=None):
+    return self.copy_at_relative(RelativePosition.left(distance))
+
+  def copy_to_above(self, distance=None):
+    return self.copy_at_relative(RelativePosition.above(distance))
+
+  def copy_to_below(self, distance=None):
+    return self.copy_at_relative(RelativePosition.below(distance))
+
   def at_relative(self, relative_position):
     self.canvas.relative_to(relative_position, self)
     return self
@@ -175,9 +196,16 @@ class Node(HasOptions):
     self.canvas.at_pos(self.southwest())
     return self
 
+  def at_northwest(self):
+    self.canvas.at_pos(self.northwest())
+    return self
+
   def make_row_to_right(self, n, distance_to_base=None, distance_between=None):
     nodes = self.canvas.with_left_to_right(n, distance_between, self).make_nodes()
-    nodes[0].set("right", "%s of %s" % (distance_to_base, self.handle))
+    if distance_to_base is None:
+      nodes[0].set("right", "of %s" % (self.handle))
+    else:
+      nodes[0].set("right", "%s of %s" % (distance_to_base, self.handle))
     return nodes
 
   def make_node(self):
@@ -205,6 +233,11 @@ class Node(HasOptions):
   def make_node_with_arrow(self):
     node = self.make_node()
     self.canvas.with_arrow().make_path().extend([self, '--', node])
+    return node
+
+  def make_node_with_arrow_text(self, text):
+    node = self.make_node()
+    self.canvas.with_arrow().make_path().extend([self, '--', node]).set_line_above_text(0, text)
     return node
 
   def make_node_with_bi_arrow(self):
@@ -755,6 +788,16 @@ class Canvas(object):
     self.items.append(Onslide(start, end))
     return self
 
+  def apply_relative_position(self, node):
+    target = self.relative_position[1]
+    if isinstance(target, Node):
+      target = target.handle
+    elif isinstance(target, NodeAnchor):
+      target = target.dumps()
+    key, value = self.relative_position[0].get_key_value(target)
+    node.set(key, value)
+    self.relative_position = None
+
   def make_node(self):
     node = Node(self, self.next_handle())
     if self.builder is not None:
@@ -762,14 +805,7 @@ class Canvas(object):
       self.builder = None
 
     if self.relative_position is not None:
-      target = self.relative_position[1]
-      if isinstance(target, Node):
-        target = target.handle
-      elif isinstance(target, NodeAnchor):
-        target = target.dumps()
-      key, value = self.relative_position[0].get_key_value(target)
-      node.set(key, value)
-      self.relative_position = None
+      self.apply_relative_position(node)
 
     self.items.append(node)
     return node
@@ -884,6 +920,7 @@ class Canvas(object):
   def apply_position_set_to_nodes(self, nodes, position_set=None):
     if position_set is None:
       position_set = self.position_set
+      self.position_set = None
     for i in range(min(len(nodes), len(position_set.items))):
       pos = position_set.items[i]
       node = nodes[i]
@@ -918,7 +955,6 @@ class Canvas(object):
     if self.position_set is not None:
       self.apply_position_set_to_nodes(nodes)
 
-    self.position_set = None
     self.coordinates = None
     self.existing = None
     self.builder = None
