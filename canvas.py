@@ -11,6 +11,12 @@ class DrawOptions:
     self.switches = set()
     self.properties = dict()
 
+  def copy(self):
+    options = DrawOptions()
+    options.switches = set(self.switches)
+    options.properties = dict(self.properties)
+    return options
+
   def isempty(self):
     return len(self.switches) == 0 and len(self.properties) == 0
 
@@ -73,14 +79,13 @@ class Node(HasOptions):
     self.canvas = canvas
     self.handle = handle
 
-    self.position_set = None
-    self.relative_position = None
-
   def dumps(self):
     return "\\node%s(%s)%s{%s};" % (
       ("[%s]" % self.options.dumps()) if not self.options.isempty() else "",
       self.handle,
-      (("at %s" % self.at) if isinstance(self.at, str) else ("at %s" % self.at.dumps()))
+      (("at %s" % self.at) if isinstance(self.at, str) else
+        ("at (%s)" % self.at.dumps() if isinstance(self.at, NodeAnchor)
+          else "at %s" % self.at.dumps()))
         if self.at is not None else "",
       self.text,
     )
@@ -92,6 +97,18 @@ class Node(HasOptions):
   def set_pos(self, pos):
     self.at = pos
     return self
+
+  def set_scale(self, scale):
+    return self.set("scale", str(scale))
+
+  def set_fill(self, fill):
+    return self.set("fill", fill)
+
+  def set_text_color(self, color):
+    return self.set("text", color)
+
+  def dont_draw(self):
+    return self.unset("draw")
 
   def center(self):
     return NodeAnchor(self, 0, 0)
@@ -112,36 +129,102 @@ class Node(HasOptions):
     return NodeAnchor(self, -1, -1)
 
   def northwest(self):
-    return NodeAnchor(self, 1, -1)
+    return NodeAnchor(self, -1, 1)
 
   def southeast(self):
-    return NodeAnchor(self, -1, 1)
+    return NodeAnchor(self, 1, -1)
 
   def northeast(self):
     return NodeAnchor(self, 1, 1)
 
-  def at_positions_short(self, lists):
-    self.position_set = PositionSet.from_short_repr(existing=[self], lists=lists)
+  def with_relative_lists(self, lists):
+    self.canvas.with_nodes([self]).with_relative_lists(lists)
     return self
 
   def make_nodes(self):
-    ret = self.canvas.make_nodes_with_position_set(self.position_set)
-    self.position_set = None
-    return self
+    return self.canvas.make_nodes()
+
+  def copy(self):
+    node = self.canvas.make_node()
+    node.text = self.text
+    node.at = self.at
+    node.options = self.options.copy()
+    return node
 
   def at_relative(self, relative_position):
-    if isinstance(relative_position, str):
-      relative_position = RelativePosition.from_str(relative_position)
-    self.relative_position = relative_position
+    self.canvas.relative_to(relative_position, self)
     return self
 
+  def at_right(self, distance=None):
+    return self.at_relative(RelativePosition.right(distance))
+
+  def at_left(self, distance=None):
+    return self.at_relative(RelativePosition.left(distance))
+
+  def at_below(self, distance=None):
+    return self.at_relative(RelativePosition.below(distance))
+
+  def at_above(self, distance=None):
+    return self.at_relative(RelativePosition.above(distance))
+
+  def at_center(self):
+    self.canvas.at_pos(self.center())
+    return self
+
+  def at_southwest(self):
+    self.canvas.at_pos(self.southwest())
+    return self
+
+  def make_row_to_right(self, n, distance_to_base=None, distance_between=None):
+    nodes = self.canvas.with_left_to_right(n, distance_between, self).make_nodes()
+    nodes[0].set("right", "%s of %s" % (distance_to_base, self.handle))
+    return nodes
+
   def make_node(self):
-    node = self.canvas.make_node()
-    if self.relative_position is not None:
-      key, value = self.relative_position.get_key_value(self.handle)
-      node.set(key, value)
-      self.relative_position = None
+    return self.canvas.make_node()
+
+  def with_box(self, width, height):
+    self.canvas.with_box(width, height)
+    return self
+
+  def with_fill(self, fill):
+    self.canvas.with_fill(fill)
+    return self
+
+  def with_text(self, text):
+    self.canvas.with_text(text)
+    return self
+
+  def with_scale(self, scale):
+    self.canvas.with_scale(scale)
+    return self
+
+  def make_box(self, width, height):
+    return self.with_box(width, height).make_node()
+
+  def make_node_with_arrow(self):
+    node = self.make_node()
+    self.canvas.with_arrow().make_path().extend([self, '--', node])
     return node
+
+  def make_node_with_bi_arrow(self):
+    node = self.make_node()
+    self.canvas.with_bi_arrow().make_path().extend([self, '--', node])
+    return node
+
+  def make_node_with_bi_arrow_text(self, text):
+    node = self.make_node()
+    self.canvas.with_bi_arrow().make_path().extend([self, '--', node]).set_line_above_text(0, text)
+    return node
+
+  def connect_to(self, another):
+    return self.canvas.connect(self, another)
+
+  def connect_with_bi_arrow(self, another):
+    return self.canvas.with_bi_arrow().connect(self, another)
+
+  def point_to(self, another):
+    return self.canvas.with_arrow().connect(self, another)
 
 class NodeAnchor(object):
   def __init__(self, node, horizontal, vertical):
@@ -151,18 +234,18 @@ class NodeAnchor(object):
 
   def dumps(self):
     items = []
-    if vertical < 0:
+    if self.vertical < 0:
       items.append("south")
-    elif vertical > 0:
+    elif self.vertical > 0:
       items.append("north")
-    if horizontal < 0:
+    if self.horizontal < 0:
       items.append("west")
-    elif horizontal > 0:
+    elif self.horizontal > 0:
       items.append("east")
     if len(items) == 0:
-      return "center"
+      return "%s.center" % (self.node.handle)
     if len(items) == 1:
-      return items[0]
+      return "%s.%s" % (self.node.handle, items[0])
     return "%s.%s" % (self.node.handle, " ".join(items))
 
 ## Fork from PyLaTeX TikZCoordinate
@@ -272,9 +355,10 @@ class Point(HasOptions):
 
   def dumps(self):
     if isinstance(self.data, Node) or isinstance(self.data, NodeAnchor):
-      if self.options.isempty():
-        return "(%s)" % self.data.dumps()
-      return "([%s]%s)" % (ns, self.options.dumps(), self.data.dumps())
+      return "(%s %s)" % (
+        ("[%s]" % self.options.dumps()) if not self.options.isempty() else "",
+        self.data.handle if isinstance(self.data, Node) else self.data.dumps(),
+      )
 
     # Now it is coordinate
     return self.data.dumps()
@@ -293,10 +377,11 @@ class Point(HasOptions):
   def unshift(self):
     return self.unset("xshift").unset("yshift")
 
-class Line(object):
+class Line(HasOptions):
   legal_types = set(['--', '-|', '|-', 'to', 'rectangle', 'circle', 'arc', 'edge'])
   def __init__(self, linetype):
-    if not linetype in legal_types:
+    super(Line, self).__init__()
+    if not linetype in Line.legal_types:
       raise ValueError("Illegal line type %s" % linetype)
     self.linetype = linetype
 
@@ -304,17 +389,31 @@ class Line(object):
     self.additional = None
 
   def dumps(self):
+    ret = self.linetype
+    if not self.options.isempty():
+      ret = "%s[%s]" % (ret, self.options.dumps())
     if self.additional is None:
-      return self.linetype
+      return ret
     if isinstance(self.additional, Node):
       return "%s node[%s]{%s}" % (
-        self.linetype, self.additional.options.dumps(), self.additional.text)
+        ret, self.additional.options.dumps(), self.additional.text)
     raise TypeError("Unknown additional information %s" % str(self.additional))
 
   def set_above_text(self, text):
     self.additional = Node(None, None).set_text(text) \
-      .set("midway").set("sloped").set("above").set("anchor", "center")
+      .set("midway").set("sloped").set("above") # .set("anchor", "center")
     return self
+
+  def set_right_text_without_slope(self, text):
+    self.additional = Node(None, None).set_text(text) \
+      .set("midway").set("right") # .set("anchor", "center")
+    return self
+
+  def from_angle(self, angle):
+    return self.set("out", str(angle))
+
+  def to_angle(self, angle):
+    return self.set("in", str(angle))
 
 class Path(HasOptions):
   def __init__(self, canvas):
@@ -331,21 +430,25 @@ class Path(HasOptions):
         raise TypeError("Cannot include consecutive lines")
       self.items.append(item)
       return self
+    elif isinstance(item, Node) or isinstance(item, NodeAnchor) or isinstance(item, Coordinate):
+      self.items.append(Point(item))
+      return self
     elif isinstance(item, str):
       try:
         coord = Coordinate.from_str(item)
         self.items.append(Point(coord))
         return self
-      except:
+      except Exception as e:
         pass
 
       try:
         line = Line(item)
         if len(self.items) > 0 and isinstance(self.items[-1], Line):
+          print("Cannot include consecutive lines: %s" % item)
           raise TypeError("Cannot include consecutive lines")
         self.items.append(line)
-        return
-      except:
+        return self
+      except Exception as e:
         pass
 
       raise ValueError("Invalid path item: %s" % item)
@@ -365,6 +468,33 @@ class Path(HasOptions):
     if self.options.isempty():
       return "\\path %s;" % pathstr
     return "\\path[%s] %s;" % (self.options.dumps(), pathstr)
+
+  def get_line(self, i):
+    counter = 0
+    for j in range(len(self.items)):
+      if isinstance(self.items[j], Line):
+        if counter == i:
+          return self.items[j]
+        counter += 1
+    raise ValueError("cannot find the %d'th line" % i)
+
+  def get_point(self, i):
+    counter = 0
+    for j in range(len(self.items)):
+      if isinstance(self.items[j], Point):
+        if counter == i:
+          return self.items[j]
+        counter += 1
+    raise ValueError("cannot find the %d'th point" % i)
+
+  def set_line(self, i, key, value=None):
+    return self.get_line(i).set(key, value)
+
+  def set_line_above_text(self, i, text):
+    return self.get_line(i).set_above_text(text)
+
+  def set_point(self, i, key, value=None):
+    return self.get_point(i).set(key, value)
 
 class Onslide(object):
   def __init__(self, start, end=None):
@@ -608,7 +738,13 @@ class Canvas(object):
     self.items = []
     self.handle_counter = 0
     self.builder = None
+
+    # Parameters for making nodes in batch
     self.position_set = None
+    self.existing = None
+    self.coordinates = None
+
+    self.relative_position = None
 
   def next_handle(self):
     ret = "node%d" % self.handle_counter
@@ -625,6 +761,16 @@ class Canvas(object):
       self.builder.apply(node)
       self.builder = None
 
+    if self.relative_position is not None:
+      target = self.relative_position[1]
+      if isinstance(target, Node):
+        target = target.handle
+      elif isinstance(target, NodeAnchor):
+        target = target.dumps()
+      key, value = self.relative_position[0].get_key_value(target)
+      node.set(key, value)
+      self.relative_position = None
+
     self.items.append(node)
     return node
 
@@ -636,6 +782,21 @@ class Canvas(object):
 
     self.items.append(path)
     return path
+
+  def batch_set(self, nodes, key, values):
+    for i in range(len(nodes)):
+      nodes[i].set(key, values[i])
+    return self
+
+  def batch_set_text(self, nodes, values):
+    for i in range(len(nodes)):
+      nodes[i].set_text(values[i])
+    return self
+
+  def batch_set_pos(self, nodes, values):
+    for i in range(len(nodes)):
+      nodes[i].set_pos(values[i])
+    return self
 
   def ensure_builder(self):
     if self.builder is None:
@@ -651,33 +812,81 @@ class Canvas(object):
     return self
 
   def with_box(self, width, height):
-    return self.with_property("minimum width", width).with_property("minimum height", height)
+    return self.with_property("minimum width", width) \
+      .with_property("minimum height", height) \
+      .with_property("draw")
 
   def with_fill(self, fill):
     return self.with_property("fill", fill)
+
+  def without_draw(self, fill):
+    return self.without_property("draw")
 
   def with_text(self, text):
     self.ensure_builder().set_text(text)
     return self
 
+  def with_scale(self, scale):
+    return self.with_property("scale", str(scale))
+
+  def with_arrow(self):
+    return self.with_property("-stealth").with_property("draw")
+
+  def with_bi_arrow(self):
+    return self.with_property("stealth-stealth").with_property("draw")
+
   def at_pos(self, pos):
     self.ensure_builder().set_pos(pos)
+    return self
+
+  def apply_to(self, items):
+    for item in items:
+      self.builder.apply(item)
+    self.builder = None
     return self
 
   def at_positions(self, position_set):
     self.position_set = position_set
     return self
 
-  def at_positions_short(self, existing=None, coords=None, lists=None):
-    self.position_set = PositionSet.from_short_repr(existing, coords, lists)
+  def with_nodes(self, nodes):
+    self.existing = nodes
     return self
 
-  def make_nodes_with_position_set(self, position_set):
-    nodes = []
-    for pos in self.position_set.items:
-      node = Node(self, self.next_handle())
-      if self.builder is not None:
-        self.builder.apply(node)
+  def with_coordinates(self, coords):
+    self.coordinates = coords
+    return self
+
+  def with_relative_lists(self, lists):
+    self.position_set = PositionSet.from_short_repr(self.existing, self.coordinates, lists)
+    return self
+
+  def with_left_to_right(self, n, distance=None, base=None):
+    self.existing = None
+    if base is None:
+      base = (0,0)
+    if isinstance(base, tuple):
+      self.with_coordinates([base]).with_relative_lists(
+        [["right" if distance is None else "right %s" % distance] + \
+          [i for i in range(n)]])
+    elif isinstance(base, Node) or isinstance(base, NodeAnchor):
+      self.with_nodes([base]).with_relative_lists(
+        [["right" if distance is None else "right %s" % distance] + \
+          [i for i in range(-1, n)]])
+    return self
+
+  def relative_to(self, relative_position, node):
+    if isinstance(relative_position, str):
+      relative_position = RelativePosition.from_str(relative_position)
+    self.relative_position = (relative_position, node)
+    return self
+
+  def apply_position_set_to_nodes(self, nodes, position_set=None):
+    if position_set is None:
+      position_set = self.position_set
+    for i in range(min(len(nodes), len(position_set.items))):
+      pos = position_set.items[i]
+      node = nodes[i]
       if isinstance(pos, Coordinate):
         node.set_pos(pos)
       elif isinstance(pos, tuple):
@@ -689,13 +898,34 @@ class Canvas(object):
         elif isinstance(target, NodeAnchor):
           key, value = relative_position.get_key_value(target.dumps())
         node.set(key, value)
+
+  def make_nodes(self, n=0):
+    nodes = []
+
+    if self.position_set is None:
+      if self.coordinates is not None:
+        self.position_set = RelativePosition.from_short_repr(self.existing, self.coordinates)
+
+    if n == 0 and self.position_set is not None:
+      n = len(self.position_set.items)
+    for i in range(n):
+      node = Node(self, self.next_handle())
+      if self.builder is not None:
+        self.builder.apply(node)
       nodes.append(node)
+      self.items.append(node)
+
+    if self.position_set is not None:
+      self.apply_position_set_to_nodes(nodes)
+
+    self.position_set = None
+    self.coordinates = None
+    self.existing = None
+    self.builder = None
     return nodes
 
-  def make_nodes(self):
-    ret = self.make_nodes_with_position_set(self.position_set)
-    self.position_set = None
-    return ret
+  def connect(self, p1, p2):
+    return self.with_property('draw').make_path().extend([p1, 'to', p2]).get_line(0)
 
   def dumps(self):
     return "\n".join([item.dumps() for item in self.items])

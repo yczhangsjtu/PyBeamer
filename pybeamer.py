@@ -1,6 +1,13 @@
 from contextlib import contextmanager
 from pylatex import *
 from pylatex.base_classes import Environment, Arguments, Options
+from .canvas import *
+
+@contextmanager
+def create_canvas(pic):
+  canvas = Canvas()
+  yield canvas
+  pic.append(NoEscape(canvas.dumps()))
 
 class CommonEnvironmentWithUtility(Environment):
   def vspace(self, height="0.5cm"):
