@@ -101,6 +101,7 @@ class Beamer(object):
       self.doc.preamble.append(Command("useinnertheme", arguments=[inner_theme]))
     self.doc.packages.append(Package("tikz"))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["positioning"]))
+    self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes.geometric"]))
     if outline_each_section:
       self.doc.preamble.append(NoEscape("""
 \\AtBeginSection[]

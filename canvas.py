@@ -217,8 +217,16 @@ class Node(HasOptions):
   def make_node(self):
     return self.canvas.make_node()
 
+  def with_property(self, key, value=None):
+    self.canvas.with_property(key, value)
+    return self
+
   def with_box(self, width, height):
     self.canvas.with_box(width, height)
+    return self
+
+  def with_draw(self):
+    self.canvas.with_draw()
     return self
 
   def with_fill(self, fill):
@@ -856,13 +864,16 @@ class Canvas(object):
     return self
 
   def without_property(self, key):
-    self.ensure_builder().unset(key, value)
+    self.ensure_builder().unset(key)
     return self
 
   def with_box(self, width, height):
     return self.with_property("minimum width", width) \
       .with_property("minimum height", height) \
       .with_property("draw")
+
+  def with_draw(self):
+    return self.with_property("draw")
 
   def with_fill(self, fill):
     return self.with_property("fill", fill)
