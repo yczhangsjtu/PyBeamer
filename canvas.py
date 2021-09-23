@@ -95,7 +95,12 @@ class Node(HasOptions):
     return self
 
   def set_pos(self, pos):
-    self.at = pos
+    if isinstance(pos, tuple) and \
+       (isinstance(pos[0], int) or isinstance(pos[0], float)) and \
+       (isinstance(pos[1], int) or isinstance(pos[1], float)):
+      self.at = Coordinate(*pos)
+    else:
+      self.at = pos
     return self
 
   def set_scale(self, scale):
@@ -160,8 +165,19 @@ class Node(HasOptions):
     node.options = self.options.copy()
     return node
 
+  def clear_relative_positions(self):
+    self.unset("left")
+    self.unset("right")
+    self.unset("above")
+    self.unset("below")
+    self.unset("below left")
+    self.unset("below right")
+    self.unset("above left")
+    self.unset("above right")
+    return self
+
   def copy_at_relative(self, relative_position):
-    node = self.copy()
+    node = self.copy().clear_relative_positions()
     self.canvas.relative_to(relative_position, self). \
       apply_relative_position(node)
     return node
@@ -213,6 +229,14 @@ class Node(HasOptions):
     else:
       nodes[0].set("right", "%s of %s" % (distance_to_base, self.handle))
     return nodes
+
+  def make_row_to_left(self, n, distance_to_base=None, distance_between=None):
+    nodes = self.canvas.with_right_to_left(n, distance_between, self).make_nodes()
+    if distance_to_base is None:
+      nodes[0].set("left", "of %s" % (self.handle))
+    else:
+      nodes[0].set("left", "%s of %s" % (distance_to_base, self.handle))
+    return nodes[::-1]  # Reverse the list, users handle them left to right
 
   def make_node(self):
     return self.canvas.make_node()
@@ -934,6 +958,20 @@ class Canvas(object):
     elif isinstance(base, Node) or isinstance(base, NodeAnchor):
       self.with_nodes([base]).with_relative_lists(
         [["right" if distance is None else "right %s" % distance] + \
+          [i for i in range(-1, n)]])
+    return self
+
+  def with_right_to_left(self, n, distance=None, base=None):
+    self.existing = None
+    if base is None:
+      base = (0,0)
+    if isinstance(base, tuple):
+      self.with_coordinates([base]).with_relative_lists(
+        [["left" if distance is None else "left %s" % distance] + \
+          [i for i in range(n)]])
+    elif isinstance(base, Node) or isinstance(base, NodeAnchor):
+      self.with_nodes([base]).with_relative_lists(
+        [["left" if distance is None else "left %s" % distance] + \
           [i for i in range(-1, n)]])
     return self
 

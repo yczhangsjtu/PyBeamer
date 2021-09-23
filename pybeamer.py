@@ -31,6 +31,13 @@ class CommonEnvironmentWithUtility(Environment):
     else:
       self.append(Command("onslide<%d-%d>" % (start, end)))
 
+  def open_onslide(self, start, end=None):
+    self.onslide(start, end)
+    self.append(NoEscape("{"))
+
+  def close_onslide(self):
+    self.append(NoEscape("}"))
+
   @contextmanager
   def tikz(self, *, node_distance=None):
     options = {}
