@@ -249,6 +249,10 @@ class Node(HasOptions):
     self.canvas.with_box(width, height)
     return self
 
+  def with_circle(self, diameter):
+    self.canvas.with_circle(diameter)
+    return self
+
   def with_draw(self):
     self.canvas.with_draw()
     return self
@@ -894,6 +898,11 @@ class Canvas(object):
   def with_box(self, width, height):
     return self.with_property("minimum width", width) \
       .with_property("minimum height", height) \
+      .with_property("draw")
+
+  def with_circle(self, diameter):
+    return self.with_property("circle") \
+      .with_property("minimum size", diameter) \
       .with_property("draw")
 
   def with_draw(self):
