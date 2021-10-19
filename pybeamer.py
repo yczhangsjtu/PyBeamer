@@ -89,6 +89,7 @@ class Beamer(object):
   def __init__(self,
       title,
       author=None,
+      institute=None,
       date=None,
       outline_each_section=False,
       default_filepath=None,
@@ -122,6 +123,11 @@ class Beamer(object):
     self.doc.preamble.append(Command("title", arguments=[title]))
     if author is not None:
       self.doc.preamble.append(Command("author", arguments=[author]))
+    if institute is not None:
+      if isinstance(institute, str):
+        self.doc.preamble.append(Command("institute", arguments=[institute]))
+      elif isinstance(institute, list):
+        self.doc.preamble.append(Command("institute", arguments=[NoEscape(" \\and ".join(institute))]))
     if date is not None:
       self.doc.preamble.append(Command("date", arguments=[date]))
 
