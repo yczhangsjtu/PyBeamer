@@ -108,8 +108,28 @@ class Beamer(object):
     if inner_theme is not None:
       self.doc.preamble.append(Command("useinnertheme", arguments=[inner_theme]))
     self.doc.packages.append(Package("tikz"))
+    self.doc.packages.append(Package("xcolor"))
+    self.doc.preamble.append(Command("definecolor", arguments=["olive", "rgb", "0.3, 0.4, .1"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["fore", "RGB", "249,242,215"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["back", "RGB", "51,51,51"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["title", "RGB", "255,0,90"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["dgreen", "rgb", "0.,0.6,0."]))
+    self.doc.preamble.append(Command("definecolor", arguments=["gold", "rgb", "1.,0.84,0."]))
+    self.doc.preamble.append(Command("definecolor", arguments=["JungleGreen", "cmyk", "0.99,0,0.52,0"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["BlueGreen", "cmyk", "0.85,0,0.33,0"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["RawSienna", "cmyk", "0,0.72,1,0.45"]))
+    self.doc.preamble.append(Command("definecolor", arguments=["Magenta", "cmyk", "0,1,0,0"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["positioning"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes.geometric"]))
+    self.doc.preamble.append(NoEscape("""
+\\newcommand{\\blue}[1]{\\textcolor{blue}{#1}}
+\\newcommand{\\green}[1]{\\textcolor{green}{#1}}
+\\newcommand{\\dgreen}[1]{\\textcolor{dgreen}{#1}}
+\\newcommand{\\orange}[1]{\\textcolor{orange}{#1}}
+\\newcommand{\\red}[1]{\\textcolor{red}{#1}}
+\\newcommand{\\purple}[1]{\\textcolor{purple}{#1}}
+\\newcommand{\\olive}[1]{\\textcolor{olive}{#1}}
+        """))
     if outline_each_section:
       self.doc.preamble.append(NoEscape("""
 \\AtBeginSection[]
