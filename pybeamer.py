@@ -20,6 +20,10 @@ class CommonEnvironmentWithUtility(Environment):
   def breakline(self):
     self.append(NoEscape("\n"))
 
+  def hline(self):
+    self.append(NoEscape(
+      "\\noindent\\makebox[\\linewidth]{\\rule{\\textwidth}{0.4pt}}"))
+
   def pause(self):
     self.append(Command("pause"))
 
