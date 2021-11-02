@@ -54,9 +54,19 @@ class CommonEnvironmentWithUtility(Environment):
   def center(self):
     self.append(Command("centering"))
 
+  def image(self, name):
+    fig = Figure()
+    fig.add_image(name)
+    self.append(fig)
+
+  @contextmanager
+  def itemize(self):
+    with self.create(Itemize()) as itemize:
+      yield itemize
+
 class Frame(CommonEnvironmentWithUtility):
   def __init__(self, *, title=None, options=None, **kwargs):
-    super(Frame, self).__init__(**kwargs)
+    super(Frame, self).__init__(options=options, **kwargs)
     if title is not None:
       self.append(Command("frametitle", arguments=[title]))
 
@@ -92,6 +102,7 @@ class Beamer(object):
       institute=None,
       date=None,
       outline_each_section=False,
+      outline_each_subsection=False,
       default_filepath=None,
       theme="default",
       color_theme="orchid",
@@ -137,6 +148,16 @@ class Beamer(object):
     \\begin{frame}
         \\frametitle{Outline}
         \\tableofcontents[currentsection]
+    \\end{frame}
+}
+        """))
+    if outline_each_subsection:
+      self.doc.preamble.append(NoEscape("""
+\\AtBeginSubsection[]
+{
+    \\begin{frame}
+        \\frametitle{Outline}
+        \\tableofcontents[currentsection,currentsubsection]
     \\end{frame}
 }
         """))

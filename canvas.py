@@ -245,6 +245,10 @@ class Node(HasOptions):
     self.canvas.with_property(key, value)
     return self
 
+  def without_property(self, key):
+    self.canvas.without_property(key)
+    return self
+
   def with_box(self, width, height):
     self.canvas.with_box(width, height)
     return self
@@ -257,8 +261,16 @@ class Node(HasOptions):
     self.canvas.with_draw()
     return self
 
+  def without_draw(self):
+    self.canvas.without_draw()
+    return self
+
   def with_fill(self, fill):
     self.canvas.with_fill(fill)
+    return self
+
+  def with_color(self, color):
+    self.canvas.with_color(color)
     return self
 
   def with_text(self, text):
@@ -460,11 +472,12 @@ class Point(HasOptions):
 
 class Line(HasOptions):
   legal_types = set(['--', '-|', '|-', 'to', 'rectangle', 'circle', 'arc', 'edge'])
-  def __init__(self, linetype):
+  def __init__(self, linetype, path=None):
     super(Line, self).__init__()
     if not linetype in Line.legal_types:
       raise ValueError("Illegal line type %s" % linetype)
     self.linetype = linetype
+    self.path = path
 
     # for example, a node attached to the line
     self.additional = None
@@ -523,7 +536,7 @@ class Path(HasOptions):
         pass
 
       try:
-        line = Line(item)
+        line = Line(item, path=self)
         if len(self.items) > 0 and isinstance(self.items[-1], Line):
           print("Cannot include consecutive lines: %s" % item)
           raise TypeError("Cannot include consecutive lines")
@@ -888,10 +901,12 @@ class Canvas(object):
     return self.builder
 
   def with_property(self, key, value=None):
+    key = key.replace("_", " ")
     self.ensure_builder().set(key, value)
     return self
 
   def without_property(self, key):
+    key = key.replace("_", " ")
     self.ensure_builder().unset(key)
     return self
 
@@ -911,7 +926,10 @@ class Canvas(object):
   def with_fill(self, fill):
     return self.with_property("fill", fill)
 
-  def without_draw(self, fill):
+  def with_color(self, color):
+    return self.with_property("color", color)
+
+  def without_draw(self):
     return self.without_property("draw")
 
   def with_text(self, text):
