@@ -68,6 +68,46 @@ class CommonEnvironmentWithUtility(Environment):
     with self.create(Itemize()) as itemize:
       yield itemize
 
+  @contextmanager
+  def enum(self):
+    with self.create(BeamerEnumerate()) as enum:
+      yield enum
+
+  @contextmanager
+  def block(self, title):
+    with self.create(Block(arguments=[title])) as block:
+      yield block
+
+  @contextmanager
+  def eqnarray(self, numbering=False):
+    with self.create(Eqnarray(numbering)) as array:
+      yield array
+
+
+class BeamerEnumerate(Enumerate, CommonEnvironmentWithUtility):
+  _latex_name = "enumerate"
+  pass
+
+
+class Eqnarray(CommonEnvironmentWithUtility):
+  def __init__(self, numbering=False, *, options=None, **kwargs):
+    super().__init__(options=options, **kwargs)
+    self.numbering = numbering
+    self.empty = True
+
+  def add_line(self, line):
+    if not self.empty:
+      self.append(NoEscape("\\\\\n"))
+    self.empty = False
+    self.append(NoEscape(line))
+    if not self.numbering:
+      self.append(NoEscape("\\nonumber"))
+
+
+class Block(CommonEnvironmentWithUtility):
+  def __init__(self, *, options=None, **kwargs):
+    super(Block, self).__init__(options=options, **kwargs)
+
 class Frame(CommonEnvironmentWithUtility):
   def __init__(self, *, title=None, options=None, **kwargs):
     super(Frame, self).__init__(options=options, **kwargs)
