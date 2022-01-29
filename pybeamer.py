@@ -151,6 +151,8 @@ class Beamer(object):
       theme="default",
       color_theme="orchid",
       inner_theme="rounded",
+      font_theme=None,
+      main_font=None,
       disable_pauses=False):
 
     options = []
@@ -158,12 +160,20 @@ class Beamer(object):
       options.append("handout")
     self.doc = Document(documentclass="beamer", document_options=options, default_filepath=default_filepath)
     self.doc.preamble.append(Command("usetheme", arguments=[theme]))
+    self.doc.packages.append(Package("tikz"))
+    self.doc.packages.append(Package("xcolor"))
     if color_theme is not None:
       self.doc.preamble.append(Command("usecolortheme", arguments=[color_theme]))
     if inner_theme is not None:
       self.doc.preamble.append(Command("useinnertheme", arguments=[inner_theme]))
-    self.doc.packages.append(Package("tikz"))
-    self.doc.packages.append(Package("xcolor"))
+    if font_theme is not None:
+      self.doc.preamble.append(Command("usefonttheme", arguments=[font_theme]))
+    if main_font is not None:
+      if main_font in ["bookman", "helvet", "chancery", "charter", "mathptm"]:
+        self.doc.packages.append(Package(main_font))
+      else:
+        self.doc.packages.append(Package("fontspec"))
+        self.doc.preamble.append(Command("setmainfont", arguments=[main_font]))
     self.doc.preamble.append(Command("definecolor", arguments=["olive", "rgb", "0.3, 0.4, .1"]))
     self.doc.preamble.append(Command("definecolor", arguments=["fore", "RGB", "249,242,215"]))
     self.doc.preamble.append(Command("definecolor", arguments=["back", "RGB", "51,51,51"]))
