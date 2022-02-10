@@ -161,6 +161,8 @@ class Beamer(object):
     self.doc = Document(documentclass="beamer", document_options=options, default_filepath=default_filepath)
     self.doc.preamble.append(Command("usetheme", arguments=[theme]))
     self.doc.packages.append(Package("tikz"))
+    self.doc.packages.append(Package("ulem"))
+    self.doc.packages.append(Package("bbm"))
     self.doc.packages.append(Package("xcolor"))
     if color_theme is not None:
       self.doc.preamble.append(Command("usecolortheme", arguments=[color_theme]))
@@ -186,6 +188,7 @@ class Beamer(object):
     self.doc.preamble.append(Command("definecolor", arguments=["Magenta", "cmyk", "0,1,0,0"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["positioning"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes.geometric"]))
+    self.doc.preamble.append(Command("usetikzlibrary", arguments=["decorations.pathreplacing"]))
     self.doc.preamble.append(NoEscape("""
 \\newcommand{\\blue}[1]{\\textcolor{blue}{#1}}
 \\newcommand{\\green}[1]{\\textcolor{green}{#1}}
@@ -217,10 +220,10 @@ class Beamer(object):
         """))
     self.doc.preamble.append(Command("title", arguments=[title]))
     if author is not None:
-      self.doc.preamble.append(Command("author", arguments=[author]))
+      self.doc.preamble.append(Command("author", arguments=[NoEscape(author)]))
     if institute is not None:
       if isinstance(institute, str):
-        self.doc.preamble.append(Command("institute", arguments=[institute]))
+        self.doc.preamble.append(Command("institute", arguments=[NoEscape(institute)]))
       elif isinstance(institute, list):
         self.doc.preamble.append(Command("institute", arguments=[NoEscape(" \\and ".join(institute))]))
     if date is not None:

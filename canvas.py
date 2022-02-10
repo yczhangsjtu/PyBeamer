@@ -128,16 +128,16 @@ class Node(HasOptions):
     return NodeAnchor(self, 0, 0)
 
   def south(self):
-    return NodeAnchor(self, -1, 0)
+    return NodeAnchor(self, 0, -1)
 
   def north(self):
-    return NodeAnchor(self, 1, 0)
-
-  def east(self):
     return NodeAnchor(self, 0, 1)
 
+  def east(self):
+    return NodeAnchor(self, 1, 0)
+
   def west(self):
-    return NodeAnchor(self, 0, -1)
+    return NodeAnchor(self, -1, 0)
 
   def southwest(self):
     return NodeAnchor(self, -1, -1)
@@ -150,6 +150,19 @@ class Node(HasOptions):
 
   def northeast(self):
     return NodeAnchor(self, 1, 1)
+
+  def anchor(self, anchor):
+    return {
+        "center": self.center,
+        "south": self.south,
+        "north": self.north,
+        "east": self.east,
+        "west": self.west,
+        "southwest": self.southwest,
+        "northwest": self.northwest,
+        "southeast": self.southeast,
+        "northeast": self.northeast,
+    }[anchor]()
 
   def with_relative_lists(self, lists):
     self.canvas.with_nodes([self]).with_relative_lists(lists)
@@ -240,6 +253,10 @@ class Node(HasOptions):
 
   def make_node(self):
     return self.canvas.make_node()
+
+  def start_path(self, anchor=None):
+    return self.canvas.make_path().with_draw().extend([
+      self if anchor is None else self.anchor(anchor)])
 
   def with_property(self, key, value=None):
     self.canvas.with_property(key, value)
@@ -589,6 +606,34 @@ class Path(HasOptions):
 
   def set_point(self, i, key, value=None):
     return self.get_point(i).set(key, value)
+
+  def last_point(self):
+    for i in reversed(range(len(self.items))):
+      if isinstance(self.items[i], Point):
+        return self.items[i]
+    return None
+
+  def draw_to(self, coordinate, line=None):
+    if isinstance(self.items[-1], Point):
+      if line is not None:
+        self.extend(line)
+      else:
+        self.extend(['--'])
+
+    if not isinstance(self.items[-1], Line):
+      raise Exception(f"The last item of this path should be line, got {self.items[-1]}")
+
+    self.extend(coordinate)
+    return self
+
+  def with_draw(self):
+    self.set("draw")
+    return self
+
+  def without_draw(self):
+    self.unset("draw")
+    return self
+
 
 class Onslide(object):
   def __init__(self, start, end=None):
