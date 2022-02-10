@@ -153,6 +153,7 @@ class Beamer(object):
       inner_theme="rounded",
       font_theme=None,
       main_font=None,
+      math_theme=None,
       disable_pauses=False):
 
     options = []
@@ -176,6 +177,8 @@ class Beamer(object):
       else:
         self.doc.packages.append(Package("fontspec"))
         self.doc.preamble.append(Command("setmainfont", arguments=[main_font]))
+    if math_theme is not None:
+      self.doc.preamble.append(Command("usefonttheme", options=["onlymath"], arguments=[math_theme]))
     self.doc.preamble.append(Command("definecolor", arguments=["olive", "rgb", "0.3, 0.4, .1"]))
     self.doc.preamble.append(Command("definecolor", arguments=["fore", "RGB", "249,242,215"]))
     self.doc.preamble.append(Command("definecolor", arguments=["back", "RGB", "51,51,51"]))
