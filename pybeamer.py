@@ -190,8 +190,10 @@ class Beamer(object):
     self.doc.preamble.append(Command("definecolor", arguments=["RawSienna", "cmyk", "0,0.72,1,0.45"]))
     self.doc.preamble.append(Command("definecolor", arguments=["Magenta", "cmyk", "0,1,0,0"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["positioning"]))
+    self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes.geometric"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["decorations.pathreplacing"]))
+    self.doc.preamble.append(Command("usetikzlibrary", arguments=["decorations.text"]))
     self.doc.preamble.append(NoEscape("""
 \\newcommand{\\blue}[1]{\\textcolor{blue}{#1}}
 \\newcommand{\\green}[1]{\\textcolor{green}{#1}}

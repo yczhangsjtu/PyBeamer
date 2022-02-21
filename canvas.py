@@ -227,12 +227,36 @@ class Node(HasOptions):
     self.canvas.at_pos(self.center())
     return self
 
+  def at_south(self):
+    self.canvas.at_pos(self.south())
+    return self
+
+  def at_north(self):
+    self.canvas.at_pos(self.north())
+    return self
+
+  def at_east(self):
+    self.canvas.at_pos(self.east())
+    return self
+
+  def at_west(self):
+    self.canvas.at_pos(self.west())
+    return self
+
   def at_southwest(self):
     self.canvas.at_pos(self.southwest())
     return self
 
   def at_northwest(self):
     self.canvas.at_pos(self.northwest())
+    return self
+
+  def at_southeast(self):
+    self.canvas.at_pos(self.southeast())
+    return self
+
+  def at_northeast(self):
+    self.canvas.at_pos(self.northeast())
     return self
 
   def make_row_to_right(self, n, distance_to_base=None, distance_between=None):
@@ -257,6 +281,12 @@ class Node(HasOptions):
   def start_path(self, anchor=None):
     return self.canvas.make_path().with_draw().extend([
       self if anchor is None else self.anchor(anchor)])
+
+  def path_around(self):
+    return self.start_path("north").extend([
+      "--", self.northeast(), "--", self.southeast(),
+      "--", self.southwest(), "--", self.northwest(),
+      "--", self.north()])
 
   def with_property(self, key, value=None):
     self.canvas.with_property(key, value)
