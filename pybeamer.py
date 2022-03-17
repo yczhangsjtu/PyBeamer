@@ -269,6 +269,10 @@ class Beamer(object):
   def generate_pdf(self, filepath="default_path", compiler=None, clean_tex=True):
     self.doc.generate_pdf(filepath, compiler=compiler, clean_tex=clean_tex)
 
+  def append(self, content):
+    self.doc.append(content)
+
+
 if __name__ == '__main__':
   beamer = Beamer("Example", author="author", outline_each_section=True)
   beamer.titleframe()
