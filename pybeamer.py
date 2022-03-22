@@ -138,19 +138,33 @@ class Columns(Environment):
       with self.create(Column(w)) as c:
         self.columns.append(c)
 
+
+class CJK(Environment):
+  _latex_name = "CJK*"
+  def __init__(self, doc, *, options=None, **kwargs):
+    super().__init__(arguments=["UTF8", "gbsn"], options=options, **kwargs)
+    self.doc = doc
+
+  def __getattr__(self, name):
+    return getattr(self.doc, name)
+
+
 class Beamer(object):
   """docstring for Beamer"""
   def __init__(self,
       title,
+      subtitle=None,
       author=None,
       institute=None,
       date=None,
       outline_each_section=False,
       outline_each_subsection=False,
+      page_number=True,
       default_filepath=None,
       theme="default",
       color_theme="orchid",
       inner_theme="rounded",
+      has_chinese=False,
       font_theme=None,
       main_font=None,
       math_theme=None,
@@ -160,11 +174,15 @@ class Beamer(object):
     if disable_pauses:
       options.append("handout")
     self.doc = Document(documentclass="beamer", document_options=options, default_filepath=default_filepath)
+    if page_number:
+      self.doc.preamble.append(NoEscape(r"\setbeamertemplate{footline}[frame number]"))
     self.doc.preamble.append(Command("usetheme", arguments=[theme]))
     self.doc.packages.append(Package("tikz"))
     self.doc.packages.append(Package("ulem"))
     self.doc.packages.append(Package("bbm"))
     self.doc.packages.append(Package("xcolor"))
+    if has_chinese:
+      self.doc.preamble.append(Package("CJKutf8"))
     if color_theme is not None:
       self.doc.preamble.append(Command("usecolortheme", arguments=[color_theme]))
     if inner_theme is not None:
@@ -224,6 +242,8 @@ class Beamer(object):
 }
         """))
     self.doc.preamble.append(Command("title", arguments=[title]))
+    if subtitle is not None:
+      self.doc.preamble.append(Command("subtitle", arguments=[subtitle]))
     if author is not None:
       self.doc.preamble.append(Command("author", arguments=[NoEscape(author)]))
     if institute is not None:
@@ -233,6 +253,9 @@ class Beamer(object):
         self.doc.preamble.append(Command("institute", arguments=[NoEscape(" \\and ".join(institute))]))
     if date is not None:
       self.doc.preamble.append(Command("date", arguments=[date]))
+    if has_chinese:
+      with self.doc.create(CJK(self.doc)) as cjk:
+        self.doc = cjk
 
   @contextmanager
   def section(self, title):
