@@ -241,6 +241,7 @@ class Beamer(object):
     self.doc.preamble.append(
         Command("usetikzlibrary", arguments=["positioning"]))
     self.doc.preamble.append(Command("usetikzlibrary", arguments=["shapes"]))
+    self.doc.preamble.append(Command("usetikzlibrary", arguments=["calc"]))
     self.doc.preamble.append(
         Command("usetikzlibrary", arguments=["shapes.geometric"]))
     self.doc.preamble.append(
