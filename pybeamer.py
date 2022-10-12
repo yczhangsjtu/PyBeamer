@@ -199,6 +199,7 @@ class Beamer(object):
     self.doc.packages.append(Package("ulem"))
     self.doc.packages.append(Package("bbm"))
     self.doc.packages.append(Package("xcolor"))
+    self.doc.packages.append(Package("pifont"))
     if has_chinese:
       self.doc.preamble.append(Package("CJKutf8"))
     if color_theme is not None:
